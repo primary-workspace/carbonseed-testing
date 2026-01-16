@@ -1,452 +1,231 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
 
-// ESP32 Board with separable elements for depth effect
-const ESP32BoardExploded = ({ 
-  explodeProgress, 
-  scale,
-  className 
-}: { 
-  explodeProgress: number;
-  scale: number;
-  className?: string;
-}) => {
-  // Elements separate based on explode progress
-  const pcbOffset = explodeProgress * 10;
-  const chipOffset = explodeProgress * 25;
-  const componentOffset = explodeProgress * 15;
-  const pinOffset = explodeProgress * 8;
-  
-  return (
-    <svg 
-      viewBox="0 0 200 280" 
-      className={className}
-      style={{ 
-        filter: `drop-shadow(0 ${20 + explodeProgress * 30}px ${40 + explodeProgress * 40}px rgba(0,0,0,${0.15 + explodeProgress * 0.1}))`,
-        transform: `scale(${scale})`,
-        transition: 'filter 0.3s ease-out'
-      }}
-    >
-      <defs>
-        <linearGradient id="pcb-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#2d5a3d" />
-          <stop offset="100%" stopColor="#1a472a" />
-        </linearGradient>
-        <filter id="inner-shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feComponentTransfer in="SourceAlpha">
-            <feFuncA type="table" tableValues="1 0" />
-          </feComponentTransfer>
-          <feGaussianBlur stdDeviation="2" />
-          <feOffset dx="2" dy="2" result="offsetblur" />
-          <feFlood floodColor="#000" floodOpacity="0.3" result="color" />
-          <feComposite in2="offsetblur" operator="in" />
-          <feComposite in2="SourceAlpha" operator="in" />
-          <feMerge>
-            <feMergeNode in="SourceGraphic" />
-            <feMergeNode />
-          </feMerge>
-        </filter>
-        <filter id="glow-green" x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-      
-      {/* Layer 1: PCB Base - furthest back */}
-      <g style={{ transform: `translateZ(${-pcbOffset}px)` }}>
-        <rect x="10" y="10" width="180" height="260" rx="4" fill="#1a472a" filter="url(#inner-shadow)" />
-        <rect x="14" y="14" width="172" height="252" rx="2" fill="url(#pcb-gradient)" />
-        
-        {/* Circuit traces */}
-        <g stroke="#3d7a52" strokeWidth="0.8" fill="none" opacity="0.7">
-          <path d="M30 80 L80 80 L80 120 L120 120" />
-          <path d="M100 60 L100 100 L140 100" />
-          <path d="M60 180 L60 220 L100 220 L100 200" />
-          <path d="M140 160 L140 200 L160 200" />
-          <path d="M40 140 L80 140 L80 180" />
-          <path d="M30 100 L50 100 L50 130" />
-          <path d="M150 120 L170 120 L170 150" />
-        </g>
-        
-        {/* Solder points */}
-        {[
-          [50, 80], [80, 120], [100, 100], [140, 160], [60, 180],
-          [100, 220], [30, 140], [170, 200], [50, 130], [170, 150]
-        ].map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r="2" fill="#5a8a6a" opacity="0.6" />
-        ))}
-      </g>
-      
-      {/* Layer 2: Main ESP32 Chip - middle */}
-      <g style={{ transform: `translateY(${-chipOffset}px)` }}>
-        <rect x="60" y="90" width="80" height="60" rx="3" fill="#0a0a0a" />
-        <rect x="63" y="93" width="74" height="54" rx="2" fill="#1a1a1a" />
-        <rect x="66" y="96" width="68" height="48" rx="1" fill="#262626" />
-        
-        {/* Chip markings */}
-        <text x="100" y="118" textAnchor="middle" fill="#555" fontSize="7" fontFamily="monospace" fontWeight="600">ESP32</text>
-        <text x="100" y="130" textAnchor="middle" fill="#444" fontSize="5" fontFamily="monospace">WROOM-32</text>
-        
-        {/* Chip corner marker */}
-        <circle cx="72" cy="102" r="2" fill="#333" />
-      </g>
-      
-      {/* Layer 3: Chip pins - separate layer */}
-      <g style={{ transform: `translateY(${-pinOffset}px)` }}>
-        {/* Pins left */}
-        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-          <rect key={`pin-l-${i}`} x="52" y={93 + i * 7} width="8" height="3" rx="0.5" fill="#c0c0c0" />
-        ))}
-        {/* Pins right */}
-        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-          <rect key={`pin-r-${i}`} x="140" y={93 + i * 7} width="8" height="3" rx="0.5" fill="#c0c0c0" />
-        ))}
-      </g>
-      
-      {/* Layer 4: Components - closest to viewer */}
-      <g style={{ transform: `translateY(${-componentOffset}px)` }}>
-        {/* Antenna module */}
-        <rect x="75" y="18" width="50" height="52" rx="3" fill="#0f0f0f" stroke="#333" strokeWidth="1" />
-        <rect x="80" y="23" width="40" height="42" rx="2" fill="#1a1a1a" />
-        <path d="M88 33 L112 33 L112 55 L88 55 Z" fill="none" stroke="#404040" strokeWidth="1.5" />
-        <path d="M95 40 L105 40 M100 35 L100 45" stroke="#505050" strokeWidth="1" />
-        
-        {/* USB-C port */}
-        <rect x="82" y="248" width="36" height="16" rx="3" fill="#2a2a2a" />
-        <rect x="87" y="252" width="26" height="8" rx="2" fill="#0f0f0f" />
-        
-        {/* Capacitors */}
-        <rect x="28" y="168" width="18" height="10" rx="2" fill="#8b7355" />
-        <rect x="154" y="168" width="18" height="10" rx="2" fill="#8b7355" />
-        
-        {/* Resistor array */}
-        <rect x="28" y="198" width="14" height="8" rx="1" fill="#1f1f1f" />
-        <rect x="158" y="198" width="14" height="8" rx="1" fill="#1f1f1f" />
-        
-        {/* Crystal oscillator */}
-        <rect x="130" y="75" width="20" height="8" rx="1" fill="#c0c0c0" />
-        
-        {/* Status LEDs */}
-        <circle 
-          cx="35" 
-          cy="40" 
-          r="5" 
-          fill={`rgba(5, 150, 105, ${0.3 + explodeProgress * 0.7})`}
-          filter={explodeProgress > 0.3 ? "url(#glow-green)" : undefined}
-        />
-        <circle 
-          cx="35" 
-          cy="58" 
-          r="5" 
-          fill={`rgba(59, 130, 246, ${0.2 + explodeProgress * 0.5})`}
-        />
-        
-        {/* Reset button */}
-        <circle cx="165" cy="45" r="7" fill="#222" stroke="#444" strokeWidth="1" />
-        <circle cx="165" cy="45" r="5" fill="#333" />
-        
-        {/* GPIO headers */}
-        <g>
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <circle key={`gpio-l-${i}`} cx="23" cy={85 + i * 11} r="2.5" fill="#d4af37" />
-          ))}
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <circle key={`gpio-r-${i}`} cx="177" cy={85 + i * 11} r="2.5" fill="#d4af37" />
-          ))}
-        </g>
-      </g>
-    </svg>
-  );
-};
+// ESP32 Board Component
+const ESP32Board = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 200 280" className={className} style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.2))' }}>
+    <defs>
+      <linearGradient id="pcb-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#2d5a3d" />
+        <stop offset="100%" stopColor="#1a472a" />
+      </linearGradient>
+    </defs>
+    <rect x="10" y="10" width="180" height="260" rx="4" fill="#1a472a" />
+    <rect x="14" y="14" width="172" height="252" rx="2" fill="url(#pcb-gradient)" />
+    <g stroke="#3d7a52" strokeWidth="0.8" fill="none" opacity="0.7">
+      <path d="M30 80 L80 80 L80 120 L120 120" />
+      <path d="M100 60 L100 100 L140 100" />
+      <path d="M60 180 L60 220 L100 220 L100 200" />
+      <path d="M140 160 L140 200 L160 200" />
+    </g>
+    <rect x="60" y="90" width="80" height="60" rx="3" fill="#0a0a0a" />
+    <rect x="63" y="93" width="74" height="54" rx="2" fill="#1a1a1a" />
+    <text x="100" y="118" textAnchor="middle" fill="#555" fontSize="7" fontFamily="monospace" fontWeight="600">ESP32</text>
+    <text x="100" y="130" textAnchor="middle" fill="#444" fontSize="5" fontFamily="monospace">WROOM-32</text>
+    <rect x="75" y="18" width="50" height="52" rx="3" fill="#0f0f0f" stroke="#333" strokeWidth="1" />
+    <rect x="80" y="23" width="40" height="42" rx="2" fill="#1a1a1a" />
+    <rect x="82" y="248" width="36" height="16" rx="3" fill="#2a2a2a" />
+    <circle cx="35" cy="40" r="5" fill="#059669" opacity="0.8" />
+    <circle cx="35" cy="58" r="5" fill="#3b82f6" opacity="0.6" />
+    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+      <circle key={`gpio-l-${i}`} cx="23" cy={85 + i * 11} r="2.5" fill="#d4af37" />
+    ))}
+    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+      <circle key={`gpio-r-${i}`} cx="177" cy={85 + i * 11} r="2.5" fill="#d4af37" />
+    ))}
+  </svg>
+);
 
-// Highway/Tunnel visualization
-const HighwayTunnel = ({ progress }: { progress: number }) => {
-  const tunnelOpacity = Math.max(0, Math.min(1, (progress - 0.15) * 4));
-  const tunnelScale = 0.8 + progress * 0.4;
-  
-  return (
-    <div 
-      className="absolute inset-0 flex items-center justify-center pointer-events-none"
-      style={{ opacity: tunnelOpacity }}
-    >
-      <svg 
-        viewBox="0 0 1200 800" 
-        className="w-full h-full max-w-6xl"
-        preserveAspectRatio="xMidYMid slice"
-        style={{ transform: `scale(${tunnelScale})` }}
-      >
-        <defs>
-          {/* Tunnel gradient */}
-          <linearGradient id="tunnel-gradient" x1="50%" y1="0%" x2="50%" y2="100%">
-            <stop offset="0%" stopColor="#1a472a" stopOpacity="0" />
-            <stop offset="30%" stopColor="#1a472a" stopOpacity="0.1" />
-            <stop offset="70%" stopColor="#2d5a3d" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#1a472a" stopOpacity="0" />
-          </linearGradient>
-          
-          {/* Road surface gradient */}
-          <linearGradient id="road-surface" x1="50%" y1="0%" x2="50%" y2="100%">
-            <stop offset="0%" stopColor="#1a472a" stopOpacity="0" />
-            <stop offset="20%" stopColor="#2d5a3d" stopOpacity="0.6" />
-            <stop offset="50%" stopColor="#3d6b4d" stopOpacity="0.8" />
-            <stop offset="80%" stopColor="#2d5a3d" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#1a472a" stopOpacity="0" />
-          </linearGradient>
-          
-          {/* Perspective lines pattern */}
-          <pattern id="circuit-lines" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-            <path d="M0 50 L40 50 L50 40 L50 0" fill="none" stroke="#4a9960" strokeWidth="0.5" opacity="0.3" />
-            <path d="M100 50 L60 50 L50 60 L50 100" fill="none" stroke="#4a9960" strokeWidth="0.5" opacity="0.3" />
-            <circle cx="50" cy="50" r="3" fill="#4a9960" opacity="0.2" />
-          </pattern>
-        </defs>
-        
-        {/* Vanishing point road */}
+// Single Curvy Road - responsive for mobile and desktop
+const CurvyRoad = ({ isMobile }: { isMobile: boolean }) => (
+  <svg 
+    viewBox={isMobile ? "0 0 400 800" : "0 0 1200 800"} 
+    className="absolute inset-0 w-full h-full" 
+    preserveAspectRatio="xMidYMid slice"
+  >
+    <defs>
+      <linearGradient id="road-fill" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stopColor="#2d5a3d" stopOpacity="0.7" />
+        <stop offset="50%" stopColor="#3d6b4d" stopOpacity="0.5" />
+        <stop offset="100%" stopColor="#2d5a3d" stopOpacity="0.3" />
+      </linearGradient>
+    </defs>
+    
+    {isMobile ? (
+      /* Mobile: Vertical curvy road */
+      <>
         <path
-          d="M600 100 
-             L300 800 
-             L900 800 
-             Z"
-          fill="url(#road-surface)"
+          d="M200 800
+             Q120 700, 200 600
+             Q280 500, 200 400
+             Q120 300, 200 200
+             Q280 100, 200 0"
+          fill="none"
+          stroke="url(#road-fill)"
+          strokeWidth="60"
+          strokeLinecap="round"
         />
-        
-        {/* Road edges - perspective lines */}
         <path
-          d="M600 100 L300 800"
+          d="M200 800
+             Q120 700, 200 600
+             Q280 500, 200 400
+             Q120 300, 200 200
+             Q280 100, 200 0"
           fill="none"
           stroke="#4a9960"
-          strokeWidth="3"
-          opacity="0.4"
+          strokeWidth="62"
+          strokeLinecap="round"
+          opacity="0.3"
         />
         <path
-          d="M600 100 L900 800"
-          fill="none"
-          stroke="#4a9960"
-          strokeWidth="3"
-          opacity="0.4"
-        />
-        
-        {/* Center dashed line */}
-        <path
-          d="M600 100 L600 800"
+          d="M200 800
+             Q120 700, 200 600
+             Q280 500, 200 400
+             Q120 300, 200 200
+             Q280 100, 200 0"
           fill="none"
           stroke="#5aaa70"
-          strokeWidth="4"
-          strokeDasharray="30 20"
-          opacity="0.5"
+          strokeWidth="2"
+          strokeDasharray="15 10"
+          strokeLinecap="round"
+          opacity="0.7"
+        >
+          <animate attributeName="stroke-dashoffset" values="0;-25" dur="1s" repeatCount="indefinite" />
+        </path>
+      </>
+    ) : (
+      /* Desktop: Horizontal curvy road from left */
+      <>
+        <path
+          d="M-50 650
+             Q150 650, 250 500
+             Q350 350, 500 400
+             Q650 450, 750 300
+             Q850 150, 1000 200
+             Q1150 250, 1250 100"
+          fill="none"
+          stroke="url(#road-fill)"
+          strokeWidth="70"
+          strokeLinecap="round"
         />
-        
-        {/* Horizontal perspective lines */}
-        {[150, 200, 270, 360, 480, 640].map((y, i) => {
-          const width = 100 + (y - 100) * 0.7;
-          return (
-            <path
-              key={i}
-              d={`M${600 - width} ${y} L${600 + width} ${y}`}
-              fill="none"
-              stroke="#4a9960"
-              strokeWidth="1"
-              opacity={0.15 + i * 0.05}
-            />
-          );
-        })}
-        
-        {/* Circuit pattern overlay */}
-        <rect
-          x="200"
-          y="0"
-          width="800"
-          height="800"
-          fill="url(#circuit-lines)"
+        <path
+          d="M-50 650
+             Q150 650, 250 500
+             Q350 350, 500 400
+             Q650 450, 750 300
+             Q850 150, 1000 200
+             Q1150 250, 1250 100"
+          fill="none"
+          stroke="#4a9960"
+          strokeWidth="72"
+          strokeLinecap="round"
           opacity="0.3"
-          style={{
-            clipPath: 'polygon(50% 12.5%, 25% 100%, 75% 100%)'
-          }}
         />
-        
-        {/* Glowing center point (vanishing point) */}
-        <circle cx="600" cy="100" r="8" fill="#059669" opacity="0.6">
-          <animate attributeName="r" values="8;12;8" dur="3s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.6;0.9;0.6" dur="3s" repeatCount="indefinite" />
-        </circle>
-        <circle cx="600" cy="100" r="20" fill="none" stroke="#059669" strokeWidth="2" opacity="0.3">
-          <animate attributeName="r" values="20;30;20" dur="3s" repeatCount="indefinite" />
-        </circle>
-      </svg>
-    </div>
-  );
-};
+        <path
+          d="M-50 650
+             Q150 650, 250 500
+             Q350 350, 500 400
+             Q650 450, 750 300
+             Q850 150, 1000 200
+             Q1150 250, 1250 100"
+          fill="none"
+          stroke="#5aaa70"
+          strokeWidth="3"
+          strokeDasharray="20 12"
+          strokeLinecap="round"
+          opacity="0.7"
+        >
+          <animate attributeName="stroke-dashoffset" values="0;-32" dur="1s" repeatCount="indefinite" />
+        </path>
+      </>
+    )}
+  </svg>
+);
 
-// Feature Signboard Component
-interface FeatureSignboard {
-  id: string;
-  number: string;
-  title: string;
-  description: string;
-  detail: string;
-  position: 'left' | 'right';
-  triggerProgress: number;
-}
-
-const featureSignboards: FeatureSignboard[] = [
-  {
-    id: 'sensing',
-    number: '01',
-    title: 'Edge Sensing',
-    description: 'Industrial-grade precision',
-    detail: 'ESP32 captures temperature (±0.1°C), vibration (3-axis), gas levels, humidity, and power at 100Hz sampling rate.',
-    position: 'left',
-    triggerProgress: 0.35
-  },
-  {
-    id: 'streaming',
-    number: '02',
-    title: 'Real-time Streaming',
-    description: 'Sub-second latency',
-    detail: 'MQTT protocol streams data to cloud with automatic buffering, compression, and offline resilience.',
-    position: 'right',
-    triggerProgress: 0.45
-  },
-  {
-    id: 'intelligence',
-    number: '03',
-    title: 'ML Intelligence',
-    description: 'Physics-informed models',
-    detail: 'Neural networks trained on industrial patterns detect anomalies and predict failures 48 hours in advance.',
-    position: 'left',
-    triggerProgress: 0.55
-  },
-  {
-    id: 'compliance',
-    number: '04',
-    title: 'Auto Compliance',
-    description: 'Regulatory automation',
-    detail: 'Generate audit-ready reports for SPCB, PAT Scheme, and CBAM with zero manual intervention.',
-    position: 'right',
-    triggerProgress: 0.65
-  }
+// Feature signboards data - positions are responsive
+const signboards = [
+  { number: '01', title: 'Edge Sensing', desc: 'Industrial-grade precision at 100Hz sampling rate' },
+  { number: '02', title: 'Real-time Streaming', desc: 'MQTT protocol with sub-second latency' },
+  { number: '03', title: 'ML Intelligence', desc: 'Predict equipment failures 48 hours ahead' },
+  { number: '04', title: 'Auto Compliance', desc: 'SPCB, PAT, CBAM reports automated' },
 ];
 
+// Desktop positions along the road curve
+const desktopPositions = [
+  { top: '70%', left: '5%', side: 'left' },
+  { top: '50%', left: '28%', side: 'right' },
+  { top: '35%', left: '52%', side: 'left' },
+  { top: '18%', left: '75%', side: 'right' },
+];
+
+// Mobile positions along vertical road
+const mobilePositions = [
+  { top: '70%', left: '55%', side: 'right' },
+  { top: '52%', left: '5%', side: 'left' },
+  { top: '34%', left: '55%', side: 'right' },
+  { top: '16%', left: '5%', side: 'left' },
+];
+
+// Signboard component - uniform size, responsive positions
 const Signboard = ({ 
-  feature, 
-  progress, 
-  index 
+  sign, 
+  index, 
+  progress,
+  isMobile
 }: { 
-  feature: FeatureSignboard; 
+  sign: typeof signboards[0]; 
+  index: number; 
   progress: number;
-  index: number;
+  isMobile: boolean;
 }) => {
-  const isVisible = progress > feature.triggerProgress;
-  const localProgress = isVisible ? Math.min(1, (progress - feature.triggerProgress) * 5) : 0;
-  
-  const xOffset = feature.position === 'left' ? -100 : 100;
-  const currentX = xOffset * (1 - localProgress);
+  const positions = isMobile ? mobilePositions : desktopPositions;
+  const pos = positions[index];
+  const triggerPoint = 0.2 + index * 0.15;
+  const isVisible = progress > triggerPoint;
+  const cardProgress = isVisible ? Math.min(1, (progress - triggerPoint) * 5) : 0;
   
   return (
     <motion.div
-      className={`absolute ${
-        feature.position === 'left' 
-          ? 'left-4 md:left-8 lg:left-16 xl:left-24' 
-          : 'right-4 md:right-8 lg:right-16 xl:right-24'
-      }`}
-      style={{
-        top: `${25 + index * 15}%`,
-        opacity: localProgress,
-        x: currentX,
-        zIndex: 30 + index
+      className="absolute z-20"
+      style={{ 
+        top: pos.top,
+        left: pos.left,
+        opacity: cardProgress,
+        y: 30 * (1 - cardProgress),
+        scale: 0.9 + 0.1 * cardProgress,
       }}
     >
-      <div className={`
-        relative max-w-xs md:max-w-sm
-        ${feature.position === 'left' ? 'text-left' : 'text-right'}
-      `}>
-        {/* Signboard frame */}
-        <div className="relative bg-surface-elevated/95 backdrop-blur-md rounded-xl border border-border/80 p-6 shadow-2xl shadow-ink/10">
-          {/* Accent bar */}
-          <div className={`absolute top-0 ${feature.position === 'left' ? 'left-0' : 'right-0'} w-1 h-full bg-gradient-to-b from-accent-green via-accent-green/50 to-transparent rounded-full`} />
-          
-          {/* Number badge */}
-          <div className={`inline-flex items-center gap-2 mb-3 ${feature.position === 'right' ? 'flex-row-reverse' : ''}`}>
-            <span className="text-xs font-mono text-accent-green bg-accent-green/10 px-2 py-1 rounded">
-              {feature.number}
-            </span>
-            <div className="w-8 h-px bg-gradient-to-r from-accent-green/50 to-transparent" />
-          </div>
-          
-          {/* Title */}
-          <h3 className="text-lg md:text-xl font-semibold text-ink mb-1">
-            {feature.title}
-          </h3>
-          
-          {/* Subtitle */}
-          <p className="text-sm font-mono text-accent-blue mb-3">
-            {feature.description}
-          </p>
-          
-          {/* Detail */}
-          <p className="text-sm text-ink-muted leading-relaxed">
-            {feature.detail}
-          </p>
-          
-          {/* Connection line to road */}
-          <div className={`absolute top-1/2 ${feature.position === 'left' ? '-right-8' : '-left-8'} w-8 h-px bg-gradient-to-r ${feature.position === 'left' ? 'from-transparent to-accent-green/30' : 'from-accent-green/30 to-transparent'}`} />
+      <div className="bg-surface-elevated/95 backdrop-blur-sm rounded-xl border border-border shadow-lg shadow-ink/5 w-[160px] sm:w-[180px] md:w-[200px] p-3 sm:p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[10px] sm:text-xs font-mono text-accent-green bg-accent-green/10 px-1.5 sm:px-2 py-0.5 rounded">
+            {sign.number}
+          </span>
+          <div className="flex-1 h-px bg-border" />
         </div>
+        <h3 className="text-xs sm:text-sm font-semibold text-ink mb-1 leading-tight">{sign.title}</h3>
+        <p className="text-[10px] sm:text-xs text-ink-muted leading-relaxed">{sign.desc}</p>
       </div>
+      {/* Connector dot */}
+      <div className={`absolute w-2 h-2 rounded-full bg-accent-green/60 ${pos.side === 'left' ? '-right-3 top-1/2 -translate-y-1/2' : '-left-3 top-1/2 -translate-y-1/2'}`} />
     </motion.div>
   );
 };
-
-// Subtle background mesh
-const BackgroundMesh = ({ scrollProgress }: { scrollProgress: number }) => (
-  <div className="absolute inset-0 pointer-events-none overflow-hidden">
-    {/* Floating gradient orbs */}
-    <motion.div
-      className="absolute top-[10%] left-[5%] w-[500px] h-[500px] rounded-full"
-      style={{
-        background: 'radial-gradient(circle, rgba(5, 150, 105, 0.03) 0%, transparent 70%)',
-        x: scrollProgress * 50,
-        y: scrollProgress * -30,
-      }}
-    />
-    <motion.div
-      className="absolute top-[40%] right-[10%] w-[400px] h-[400px] rounded-full"
-      style={{
-        background: 'radial-gradient(circle, rgba(100, 116, 139, 0.03) 0%, transparent 70%)',
-        x: scrollProgress * -40,
-        y: scrollProgress * 20,
-      }}
-    />
-    <motion.div
-      className="absolute bottom-[20%] left-[30%] w-[600px] h-[600px] rounded-full"
-      style={{
-        background: 'radial-gradient(circle, rgba(217, 119, 6, 0.02) 0%, transparent 70%)',
-        x: scrollProgress * 30,
-        y: scrollProgress * -40,
-      }}
-    />
-    
-    {/* Rectangular mesh pattern */}
-    <svg className="absolute inset-0 w-full h-full opacity-[0.02]" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="mesh-pattern" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-          <rect x="0" y="0" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-ink" />
-          <rect x="40" y="40" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-ink" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#mesh-pattern)" />
-    </svg>
-  </div>
-);
 
 // Main component
 export const InteractiveBoardSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentProgress, setCurrentProgress] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -457,149 +236,90 @@ export const InteractiveBoardSection = () => {
     setCurrentProgress(latest);
   });
 
-  // Phase calculations
-  // Phase 1 (0-20%): Board dominates, slight depth separation
-  // Phase 2 (20-35%): Board recedes, highway appears
-  // Phase 3 (35-75%): Features appear along highway
-  // Phase 4 (75-100%): Transition out
-  
+  // Board animation - responsive for mobile
   const boardScale = useTransform(
     scrollYProgress, 
-    [0, 0.1, 0.25, 0.75], 
-    [1.2, 1, 0.35, 0.2]
+    [0, 0.08, 0.2], 
+    isMobile ? [1, 0.6, 0.3] : [1, 0.7, 0.35]
   );
-  
+  const boardX = useTransform(
+    scrollYProgress, 
+    [0, 0.08, 0.2], 
+    isMobile ? ['0%', '0%', '-25%'] : ['0%', '-15%', '-35%']
+  );
   const boardY = useTransform(
-    scrollYProgress,
-    [0, 0.1, 0.3, 0.75],
-    [0, 0, -150, -300]
+    scrollYProgress, 
+    [0, 0.08, 0.2], 
+    isMobile ? ['0%', '-20%', '-35%'] : ['0%', '5%', '20%']
   );
+  const boardOpacity = useTransform(scrollYProgress, [0, 0.1, 0.85, 0.95], [1, 1, 1, 0]);
   
-  const boardOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.2, 0.7, 0.8],
-    [1, 1, 0.8, 0]
-  );
+  // Road fades in as board moves
+  const roadOpacity = useTransform(scrollYProgress, [0.08, 0.18], [0, 1]);
   
-  const explodeProgress = useTransform(
-    scrollYProgress,
-    [0.05, 0.25],
-    [0, 1]
-  );
-  
-  const highwayOpacity = useTransform(
-    scrollYProgress,
-    [0.15, 0.3, 0.75, 0.85],
-    [0, 1, 1, 0]
-  );
-  
-  const headlineOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.05, 0.2, 0.3],
-    [0, 1, 1, 0]
-  );
-  
-  const headlineY = useTransform(
-    scrollYProgress,
-    [0, 0.05],
-    [30, 0]
-  );
-  
-  const sectionEndOpacity = useTransform(
-    scrollYProgress,
-    [0.8, 0.95],
-    [0, 1]
-  );
+  // Headline fades out as we scroll
+  const headlineOpacity = useTransform(scrollYProgress, [0, 0.03, 0.1], [0, 1, 0]);
 
   return (
-    <section 
-      ref={containerRef} 
-      id="features"
-      className="relative h-[600vh]"
-    >
+    <section ref={containerRef} id="features" className="relative h-[400vh] md:h-[450vh]">
       {/* Pinned container */}
       <div className="sticky top-0 h-screen overflow-hidden bg-surface">
-        {/* Background mesh */}
-        <BackgroundMesh scrollProgress={currentProgress} />
+        {/* Subtle grid background */}
+        <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <rect width="40" height="40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-ink" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
+        </div>
         
-        {/* Highway/Tunnel layer - z-10 */}
-        <motion.div 
-          style={{ opacity: highwayOpacity }}
-          className="absolute inset-0 z-10"
-        >
-          <HighwayTunnel progress={currentProgress} />
+        {/* Curvy Road */}
+        <motion.div style={{ opacity: roadOpacity }} className="absolute inset-0 z-10">
+          <CurvyRoad isMobile={isMobile} />
         </motion.div>
         
-        {/* Feature signboards - z-30 */}
-        <div className="absolute inset-0 z-30">
-          {featureSignboards.map((feature, index) => (
-            <Signboard 
-              key={feature.id}
-              feature={feature}
-              progress={currentProgress}
-              index={index}
-            />
+        {/* Signboards along the road */}
+        <div className="absolute inset-0 z-20 px-3 md:px-0">
+          {signboards.map((sign, index) => (
+            <Signboard key={sign.number} sign={sign} index={index} progress={currentProgress} isMobile={isMobile} />
           ))}
         </div>
         
-        {/* ESP32 Board - z-40 (foreground) */}
+        {/* ESP32 Board - starts center, moves to corner */}
         <motion.div 
           style={{ 
-            scale: boardScale,
-            y: boardY,
-            opacity: boardOpacity,
+            scale: boardScale, 
+            x: boardX, 
+            y: boardY, 
+            opacity: boardOpacity 
           }}
-          className="absolute inset-0 flex flex-col items-center justify-center z-40 pointer-events-none"
+          className="absolute inset-0 flex flex-col items-center justify-center z-30 pointer-events-none will-change-transform"
         >
-          {/* Headline above board */}
-          <motion.div 
-            style={{ opacity: headlineOpacity, y: headlineY }}
-            className="text-center mb-8 px-4"
-          >
-            <span className="label-sm text-accent-green mb-3 block">The Technology</span>
-            <h2 className="heading-lg text-ink max-w-2xl">
-              Precision-engineered for Indian industry.
-            </h2>
+          {/* Headline */}
+          <motion.div style={{ opacity: headlineOpacity }} className="text-center mb-4 md:mb-6 px-4">
+            <span className="label-sm text-accent-green mb-2 block text-xs md:text-sm">The Technology</span>
+            <h2 className="text-xl md:text-3xl lg:text-4xl font-semibold text-ink">Precision-engineered for Indian industry.</h2>
           </motion.div>
           
-          {/* The Board */}
-          <div className="w-48 md:w-64 lg:w-80">
-            <ESP32BoardExploded 
-              explodeProgress={explodeProgress.get()}
-              scale={1}
-              className="w-full h-auto"
-            />
+          {/* Board */}
+          <div className="w-32 sm:w-40 md:w-56 lg:w-64">
+            <ESP32Board className="w-full h-auto" />
           </div>
           
-          {/* Tagline below board */}
-          <motion.p 
-            style={{ opacity: headlineOpacity }}
-            className="mt-6 text-sm font-mono text-ink-faint"
-          >
-            ESP32-based edge sensing • Made for harsh environments
+          <motion.p style={{ opacity: headlineOpacity }} className="mt-3 md:mt-4 text-xs md:text-sm font-mono text-ink-faint">
+            ESP32-based edge sensing
           </motion.p>
         </motion.div>
         
-        {/* Scroll progress indicator */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-50 hidden lg:block">
-          <div className="h-32 w-0.5 bg-border/50 rounded-full overflow-hidden">
-            <motion.div 
-              style={{ scaleY: scrollYProgress, transformOrigin: 'top' }}
-              className="w-full h-full bg-accent-green"
-            />
-          </div>
-          <span className="block mt-2 text-xs font-mono text-ink-faint">
-            {Math.round(currentProgress * 100)}%
-          </span>
-        </div>
-        
-        {/* End of journey indicator */}
+        {/* Section label - appears when road is visible */}
         <motion.div 
-          style={{ opacity: sectionEndOpacity }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 text-center"
+          style={{ opacity: useTransform(scrollYProgress, [0.15, 0.25], [0, 1]) }}
+          className="absolute top-4 md:top-8 right-4 md:right-8 z-40"
         >
-          <span className="text-sm font-mono text-ink-faint">Journey complete</span>
-          <div className="mt-2 w-6 h-6 mx-auto border-b-2 border-r-2 border-ink-faint rotate-45 animate-bounce" />
+          <span className="text-[10px] md:text-xs font-mono text-ink-faint">Scroll to explore</span>
         </motion.div>
       </div>
     </section>

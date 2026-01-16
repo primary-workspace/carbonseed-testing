@@ -1,7 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { motion, useScroll, useTransform, useMotionValueEvent, useInView } from 'framer-motion';
+'use client';
+
+import { useRef } from 'react';
+import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 
 const industries = [
   { name: 'Steel & Foundries', description: 'Furnace monitoring, energy optimization', icon: '🏭' },
@@ -152,144 +154,67 @@ const IndustrialSceneSVG = () => (
   </svg>
 );
 
-// Context details that update as zoom progresses
-const contextDetails = [
-  { progress: 0.2, title: 'Real-time Monitoring', desc: 'Every sensor connected, every reading captured' },
-  { progress: 0.4, title: 'Data Integration', desc: 'Seamless flow from edge to cloud' },
-  { progress: 0.6, title: 'Operational Intelligence', desc: 'AI-powered insights for every machine' },
-  { progress: 0.8, title: 'Compliance Ready', desc: 'Automated reporting for regulatory bodies' },
-];
-
 export const TechnologySection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const complianceRef = useRef(null);
   const isComplianceInView = useInView(complianceRef, { once: true, margin: "-100px" });
-  const [currentDetail, setCurrentDetail] = useState(0);
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start start", "end end"]
+    offset: ["start end", "end end"] // Start animating when section enters viewport from bottom
   });
   
-  useMotionValueEvent(scrollYProgress, "change", (latest) => {
-    const detailIndex = contextDetails.findIndex((d, i) => {
-      const next = contextDetails[i + 1];
-      return latest >= d.progress && (!next || latest < next.progress);
-    });
-    if (detailIndex !== -1 && detailIndex !== currentDetail) {
-      setCurrentDetail(detailIndex);
-    }
-  });
-  
-  // Industry image zoom effect - starts small and distant, zooms in
-  const imageScale = useTransform(scrollYProgress, [0, 0.3, 0.7], [0.4, 0.8, 1.1]);
-  const imageY = useTransform(scrollYProgress, [0, 0.5], [100, 0]);
-  const imageOpacity = useTransform(scrollYProgress, [0, 0.15, 0.8, 1], [0, 1, 1, 0.8]);
-  
-  // Content reveals
-  const titleOpacity = useTransform(scrollYProgress, [0.1, 0.25], [0, 1]);
-  const titleY = useTransform(scrollYProgress, [0.1, 0.25], [40, 0]);
-  
-  // Detail card opacity based on progress
-  const detailOpacity = useTransform(scrollYProgress, [0.2, 0.3, 0.85, 0.95], [0, 1, 1, 0]);
-  
-  // Industry cards appear after zoom settles
-  const cardsOpacity = useTransform(scrollYProgress, [0.65, 0.8], [0, 1]);
-  const cardsY = useTransform(scrollYProgress, [0.65, 0.8], [60, 0]);
+  // Zoom effect - starts immediately as section enters view
+  const imageScale = useTransform(scrollYProgress, [0, 0.2, 0.5], [0.4, 0.75, 1]);
+  const imageOpacity = useTransform(scrollYProgress, [0, 0.1, 0.85, 1], [0.3, 1, 1, 0.8]);
+  const titleOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
+  const cardsOpacity = useTransform(scrollYProgress, [0.4, 0.55], [0, 1]);
+  const cardsY = useTransform(scrollYProgress, [0.4, 0.55], [30, 0]);
 
   return (
     <section ref={containerRef} id="industries" className="relative">
-      {/* Industry Scene with Zoom Effect - Pinned Section */}
-      <div className="h-[350vh] relative">
+      {/* Industry Scene with Zoom Effect */}
+      <div className="h-[200vh] md:h-[250vh] relative">
         <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-surface to-surface-muted">
-          {/* Subtle background pattern */}
-          <div className="absolute inset-0 opacity-[0.015] pointer-events-none">
-            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="industry-grid" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-                  <rect width="60" height="60" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-ink" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#industry-grid)" />
-            </svg>
-          </div>
-          
           {/* Section label */}
           <motion.div 
-            style={{ opacity: titleOpacity, y: titleY }}
-            className="absolute top-8 left-1/2 -translate-x-1/2 text-center z-30"
+            style={{ opacity: titleOpacity }}
+            className="absolute top-6 md:top-10 left-1/2 -translate-x-1/2 text-center z-30 px-4"
           >
-            <span className="label-sm text-accent-green mb-2 block">Industries We Serve</span>
-            <h2 className="heading-lg text-ink">
-              Built for Indian manufacturing.
-            </h2>
+            <span className="label-sm text-accent-green mb-1 md:mb-2 block text-xs md:text-sm">Industries We Serve</span>
+            <h2 className="text-xl md:text-3xl lg:text-4xl font-semibold text-ink">Built for Indian manufacturing.</h2>
           </motion.div>
           
-          {/* Industrial scene - zooms from small to large */}
+          {/* Industrial scene - zooms in immediately */}
           <motion.div 
-            style={{ 
-              scale: imageScale, 
-              y: imageY,
-              opacity: imageOpacity 
-            }}
-            className="absolute inset-0 flex items-center justify-center z-10 px-8"
+            style={{ scale: imageScale, opacity: imageOpacity }}
+            className="absolute inset-0 flex items-center justify-center z-10 px-4 md:px-8 will-change-transform"
           >
-            <div className="w-full max-w-5xl">
+            <div className="w-full max-w-4xl md:max-w-5xl">
               <IndustrialSceneSVG />
             </div>
           </motion.div>
           
-          {/* Context detail card - updates as scroll progresses */}
-          <motion.div 
-            style={{ opacity: detailOpacity }}
-            className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30"
-          >
-            <div className="bg-surface-elevated/95 backdrop-blur-md rounded-xl border border-border px-8 py-5 shadow-2xl shadow-ink/5 text-center min-w-[300px]">
-              <motion.div
-                key={currentDetail}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <span className="text-xs font-mono text-accent-green mb-1 block">
-                  {String(currentDetail + 1).padStart(2, '0')} / {String(contextDetails.length).padStart(2, '0')}
-                </span>
-                <h3 className="text-lg font-semibold text-ink mb-1">
-                  {contextDetails[currentDetail].title}
-                </h3>
-                <p className="text-sm text-ink-muted">
-                  {contextDetails[currentDetail].desc}
-                </p>
-              </motion.div>
-            </div>
-          </motion.div>
-          
-          {/* Industries grid - appears after zoom settles */}
+          {/* Industry cards - overlay with even spacing */}
           <motion.div 
             style={{ opacity: cardsOpacity, y: cardsY }}
-            className="absolute bottom-32 left-0 right-0 z-20 px-4"
+            className="absolute bottom-6 md:bottom-12 left-0 right-0 z-20 px-3 md:px-6"
           >
-            <div className="max-w-6xl mx-auto">
-              <div className="flex flex-wrap justify-center gap-3">
+            <div className="max-w-4xl md:max-w-5xl mx-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 md:gap-3">
                 {industries.map((industry, index) => (
                   <motion.div
                     key={industry.name}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ 
-                      duration: 0.4, 
-                      delay: index * 0.05, 
-                      ease: [0.16, 1, 0.3, 1] 
-                    }}
+                    transition={{ duration: 0.4, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
                     className="group"
                   >
-                    <div className="px-4 py-3 bg-surface-elevated/80 backdrop-blur-sm rounded-lg border border-border/60 hover:border-accent-green/40 hover:shadow-lg transition-all duration-300 flex items-center gap-3">
-                      <span className="text-lg">{industry.icon}</span>
-                      <div>
-                        <h3 className="text-sm font-medium text-ink group-hover:text-accent-green transition-colors">{industry.name}</h3>
-                        <p className="text-xs text-ink-faint">{industry.description}</p>
-                      </div>
+                    {/* Even sized cards - fixed height */}
+                    <div className="h-[72px] md:h-[80px] p-2 md:p-3 bg-surface-elevated/90 backdrop-blur-sm rounded-lg border border-border/70 hover:border-accent-green/40 hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center">
+                      <span className="text-lg md:text-xl mb-1 md:mb-2 block">{industry.icon}</span>
+                      <h3 className="text-[10px] md:text-xs font-medium text-ink group-hover:text-accent-green transition-colors leading-tight text-center">{industry.name}</h3>
                     </div>
                   </motion.div>
                 ))}
