@@ -34,9 +34,200 @@ interface Device {
   id: number;
   device_id: string;
   device_name: string;
+  machine_name?: string;
+  location?: string;
   is_active: boolean;
   last_seen: string | null;
+  temperature?: number;
+  gas_index?: number;
+  vibration_x?: number;
+  vibration_y?: number;
+  vibration_z?: number;
+  power_consumption?: number;
 }
+
+// Mock devices data
+const MOCK_DEVICES: Device[] = [
+  {
+    id: 1,
+    device_id: "ESP32-SF-001",
+    device_name: "Furnace Monitor 1",
+    machine_name: "Main Blast Furnace",
+    location: "Floor 1, Bay A",
+    is_active: true,
+    last_seen: new Date(Date.now() - 60000).toISOString(),
+    temperature: 875.5,
+    gas_index: 245,
+    vibration_x: 2.3,
+    vibration_y: 1.8,
+    vibration_z: 2.1,
+    power_consumption: 42.5
+  },
+  {
+    id: 2,
+    device_id: "ESP32-SF-002",
+    device_name: "Cooling Tower Monitor",
+    machine_name: "Cooling Tower Unit 3",
+    location: "Floor 2, Bay B",
+    is_active: true,
+    last_seen: new Date(Date.now() - 120000).toISOString(),
+    temperature: 45.2,
+    gas_index: 120,
+    vibration_x: 1.5,
+    vibration_y: 1.2,
+    vibration_z: 1.4,
+    power_consumption: 28.3
+  },
+  {
+    id: 3,
+    device_id: "ESP32-SF-003",
+    device_name: "Press Machine Sensor",
+    machine_name: "Hydraulic Press A",
+    location: "Floor 1, Bay C",
+    is_active: true,
+    last_seen: new Date(Date.now() - 30000).toISOString(),
+    temperature: 68.7,
+    gas_index: 89,
+    vibration_x: 4.2,
+    vibration_y: 3.8,
+    vibration_z: 4.0,
+    power_consumption: 55.2
+  },
+  {
+    id: 4,
+    device_id: "ESP32-SF-004",
+    device_name: "Compressor Monitor",
+    machine_name: "Air Compressor Unit 1",
+    location: "Floor 1, Bay D",
+    is_active: true,
+    last_seen: new Date(Date.now() - 90000).toISOString(),
+    temperature: 52.3,
+    gas_index: 156,
+    vibration_x: 3.1,
+    vibration_y: 2.9,
+    vibration_z: 3.0,
+    power_consumption: 38.7
+  },
+  {
+    id: 5,
+    device_id: "ESP32-SF-005",
+    device_name: "Welding Station Sensor",
+    machine_name: "Automated Welder 2",
+    location: "Floor 2, Bay A",
+    is_active: false,
+    last_seen: new Date(Date.now() - 3600000).toISOString(),
+    temperature: 0,
+    gas_index: 0,
+    vibration_x: 0,
+    vibration_y: 0,
+    vibration_z: 0,
+    power_consumption: 0
+  },
+  {
+    id: 6,
+    device_id: "ESP32-SF-006",
+    device_name: "Conveyor Belt Monitor",
+    machine_name: "Main Assembly Line",
+    location: "Floor 1, Bay E",
+    is_active: true,
+    last_seen: new Date(Date.now() - 45000).toISOString(),
+    temperature: 38.5,
+    gas_index: 78,
+    vibration_x: 2.0,
+    vibration_y: 1.7,
+    vibration_z: 1.9,
+    power_consumption: 22.1
+  },
+  {
+    id: 7,
+    device_id: "ESP32-CP-001",
+    device_name: "Reactor Monitor",
+    machine_name: "Chemical Reactor A",
+    location: "Building 3, Floor 1",
+    is_active: true,
+    last_seen: new Date(Date.now() - 15000).toISOString(),
+    temperature: 185.3,
+    gas_index: 320,
+    vibration_x: 1.2,
+    vibration_y: 1.0,
+    vibration_z: 1.1,
+    power_consumption: 65.8
+  },
+  {
+    id: 8,
+    device_id: "ESP32-CP-002",
+    device_name: "Mixing Tank Sensor",
+    machine_name: "Industrial Mixer B",
+    location: "Building 3, Floor 2",
+    is_active: true,
+    last_seen: new Date(Date.now() - 75000).toISOString(),
+    temperature: 42.8,
+    gas_index: 198,
+    vibration_x: 2.8,
+    vibration_y: 2.5,
+    vibration_z: 2.7,
+    power_consumption: 31.4
+  }
+];
+
+// Mock alerts data
+const MOCK_ALERTS: Alert[] = [
+  {
+    id: 1,
+    title: "High Temperature Alert",
+    message: "Furnace temperature exceeded threshold of 900°C - current reading 925.5°C",
+    severity: "warning",
+    status: "active",
+    triggered_at: new Date(Date.now() - 7200000).toISOString()
+  },
+  {
+    id: 2,
+    title: "Critical Vibration Detected",
+    message: "Press Machine showing abnormal vibration levels - immediate inspection required",
+    severity: "critical",
+    status: "active",
+    triggered_at: new Date(Date.now() - 3600000).toISOString()
+  },
+  {
+    id: 3,
+    title: "Gas Index Warning",
+    message: "Chemical Reactor gas index elevated to 320 ppm - monitor closely",
+    severity: "warning",
+    status: "active",
+    triggered_at: new Date(Date.now() - 1800000).toISOString()
+  },
+  {
+    id: 4,
+    title: "Device Offline",
+    message: "Welding Station Sensor has been offline for over 1 hour",
+    severity: "info",
+    status: "active",
+    triggered_at: new Date(Date.now() - 3600000).toISOString()
+  },
+  {
+    id: 5,
+    title: "Maintenance Due",
+    message: "Compressor Unit 1 scheduled maintenance is overdue by 3 days",
+    severity: "warning",
+    status: "acknowledged",
+    triggered_at: new Date(Date.now() - 86400000).toISOString()
+  }
+];
+
+// Generate mock time series data
+const generateMockTimeSeriesData = () => {
+  const data = [];
+  const now = new Date();
+  for (let i = 19; i >= 0; i--) {
+    const time = new Date(now.getTime() - i * 5 * 60000);
+    data.push({
+      time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      temperature: 850 + Math.random() * 80 - 40,
+      gas_index: 200 + Math.random() * 100 - 50,
+    });
+  }
+  return data;
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -47,6 +238,8 @@ export default function DashboardPage() {
   const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'devices' | 'alerts'>('overview');
+  const [useMockData, setUseMockData] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -61,6 +254,7 @@ export default function DashboardPage() {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       
+      // First get user data
       const userRes = await fetch(`${apiUrl}/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -69,38 +263,46 @@ export default function DashboardPage() {
       const userData = await userRes.json();
       setUser(userData);
 
-      const latestRes = await fetch(`${apiUrl}/data/latest`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const latest = await latestRes.json();
-      setLatestData(latest);
+      // Try to fetch real data
+      try {
+        const [latestRes, alertsRes, devicesRes] = await Promise.all([
+          fetch(`${apiUrl}/data/latest`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/alerts?status=active`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${apiUrl}/devices`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
 
-      const alertsRes = await fetch(`${apiUrl}/alerts?status=active`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const alertsData = await alertsRes.json();
-      setAlerts(alertsData.slice(0, 5));
+        const latest = await latestRes.json();
+        const alertsData = await alertsRes.json();
+        const devicesData = await devicesRes.json();
 
-      const devicesRes = await fetch(`${apiUrl}/devices`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const devicesData = await devicesRes.json();
-      setDevices(devicesData);
+        // Check if we have real data or use mock
+        if (devicesData.length === 0 || !latest.temperature) {
+          loadMockData();
+        } else {
+          setLatestData(latest);
+          setAlerts(alertsData.slice(0, 5));
+          setDevices(devicesData);
+          setUseMockData(false);
 
-      if (devicesData.length > 0) {
-        const deviceId = devicesData[0].id;
-        const tsRes = await fetch(`${apiUrl}/data/timeseries?device_id=${deviceId}&limit=100`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const tsData = await tsRes.json();
-        
-        const formattedData = tsData.map((d: any) => ({
-          time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          temperature: d.temperature,
-          gas_index: d.gas_index,
-        })).reverse();
-        
-        setTimeSeriesData(formattedData.slice(-20));
+          if (devicesData.length > 0) {
+            const deviceId = devicesData[0].id;
+            const tsRes = await fetch(`${apiUrl}/data/timeseries?device_id=${deviceId}&limit=100`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const tsData = await tsRes.json();
+            
+            const formattedData = tsData.map((d: any) => ({
+              time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              temperature: d.temperature,
+              gas_index: d.gas_index,
+            })).reverse();
+            
+            setTimeSeriesData(formattedData.slice(-20));
+          }
+        }
+      } catch {
+        // API error, use mock data
+        loadMockData();
       }
 
       setLoading(false);
@@ -109,6 +311,27 @@ export default function DashboardPage() {
       localStorage.removeItem('token');
       router.push('/login');
     }
+  };
+
+  const loadMockData = () => {
+    setUseMockData(true);
+    setDevices(MOCK_DEVICES);
+    setAlerts(MOCK_ALERTS);
+    setTimeSeriesData(generateMockTimeSeriesData());
+    
+    // Calculate latest data from mock devices
+    const activeDevices = MOCK_DEVICES.filter(d => d.is_active);
+    const avgTemp = activeDevices.reduce((sum, d) => sum + (d.temperature || 0), 0) / activeDevices.length;
+    const avgGas = activeDevices.reduce((sum, d) => sum + (d.gas_index || 0), 0) / activeDevices.length;
+    const maxVibration = Math.max(...activeDevices.map(d => Math.max(d.vibration_x || 0, d.vibration_y || 0, d.vibration_z || 0)));
+    
+    setLatestData({
+      temperature: avgTemp,
+      gas_index: avgGas,
+      vibration_health: maxVibration > 4 ? 'moderate' : 'healthy',
+      device_uptime: (activeDevices.length / MOCK_DEVICES.length) * 100,
+      last_update: new Date().toISOString()
+    });
   };
 
   const handleLogout = () => {
@@ -201,6 +424,22 @@ export default function DashboardPage() {
               </li>
             ))}
           </ul>
+
+          {/* Admin link for admin users */}
+          {user?.role === 'admin' && (
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <Link 
+                href="/admin"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="font-medium">Admin Panel</span>
+              </Link>
+            </div>
+          )}
         </nav>
         
         {/* User section */}
@@ -240,6 +479,7 @@ export default function DashboardPage() {
                 {activeTab === 'alerts' && 'Alert Center'}
               </h1>
               <p className="text-sm text-ink-muted mt-0.5">
+                {useMockData && <span className="text-accent-amber">[Demo Mode] </span>}
                 {latestData?.last_update 
                   ? `Last updated ${new Date(latestData.last_update).toLocaleString()}`
                   : 'Real-time monitoring active'
@@ -247,6 +487,11 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {useMockData && (
+                <span className="px-3 py-1.5 text-xs font-medium text-accent-amber bg-accent-amber/10 rounded-full">
+                  Mock Data
+                </span>
+              )}
               {(user?.role === 'admin' || user?.role === 'factory_owner') && (
                 <button
                   onClick={() => router.push('/simulator')}
@@ -270,17 +515,17 @@ export default function DashboardPage() {
               {/* Metrics Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <MetricCard
-                  label="Temperature"
+                  label="Avg Temperature"
                   value={latestData?.temperature ? `${latestData.temperature.toFixed(1)}°` : '--'}
                   unit="C"
-                  status={latestData?.temperature && latestData.temperature > 900 ? 'critical' : 'normal'}
+                  status={latestData?.temperature && latestData.temperature > 200 ? 'warning' : 'normal'}
                   icon={<TemperatureIcon />}
                 />
                 <MetricCard
-                  label="Gas Index"
+                  label="Avg Gas Index"
                   value={latestData?.gas_index ? latestData.gas_index.toFixed(0) : '--'}
                   unit="ppm"
-                  status={latestData?.gas_index && latestData.gas_index > 400 ? 'warning' : 'normal'}
+                  status={latestData?.gas_index && latestData.gas_index > 250 ? 'warning' : 'normal'}
                   icon={<GasIcon />}
                 />
                 <MetricCard
@@ -358,10 +603,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-4">
                       <div className="flex-1">
                         <div className="text-2xl font-semibold text-ink">
-                          {devices.filter(d => {
-                            const isOnline = d.last_seen && (new Date().getTime() - new Date(d.last_seen).getTime()) < 300000;
-                            return isOnline;
-                          }).length}
+                          {devices.filter(d => d.is_active).length}
                           <span className="text-ink-faint text-base font-normal"> / {devices.length}</span>
                         </div>
                         <p className="text-xs text-ink-muted">Online now</p>
@@ -404,11 +646,128 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
+              {/* Device Stats Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-surface-elevated rounded-xl border border-border p-4">
+                  <p className="text-sm text-ink-muted">Total Devices</p>
+                  <p className="text-2xl font-semibold text-ink mt-1">{devices.length}</p>
+                </div>
+                <div className="bg-surface-elevated rounded-xl border border-border p-4">
+                  <p className="text-sm text-ink-muted">Online</p>
+                  <p className="text-2xl font-semibold text-accent-green mt-1">
+                    {devices.filter(d => d.is_active).length}
+                  </p>
+                </div>
+                <div className="bg-surface-elevated rounded-xl border border-border p-4">
+                  <p className="text-sm text-ink-muted">Offline</p>
+                  <p className="text-2xl font-semibold text-ink-faint mt-1">
+                    {devices.filter(d => !d.is_active).length}
+                  </p>
+                </div>
+                <div className="bg-surface-elevated rounded-xl border border-border p-4">
+                  <p className="text-sm text-ink-muted">Alerts</p>
+                  <p className="text-2xl font-semibold text-accent-amber mt-1">
+                    {alerts.filter(a => a.status === 'active').length}
+                  </p>
+                </div>
+              </div>
+
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {devices.map((device) => (
-                  <DeviceCard key={device.id} device={device} />
+                  <DeviceCard 
+                    key={device.id} 
+                    device={device} 
+                    onClick={() => setSelectedDevice(device)}
+                    selected={selectedDevice?.id === device.id}
+                  />
                 ))}
               </div>
+
+              {/* Device Detail Modal */}
+              {selectedDevice && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                  onClick={() => setSelectedDevice(null)}
+                >
+                  <motion.div 
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="bg-surface-elevated rounded-2xl border border-border p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-start justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-ink">{selectedDevice.device_name}</h3>
+                        <p className="text-sm text-ink-muted font-mono">{selectedDevice.device_id}</p>
+                      </div>
+                      <button 
+                        onClick={() => setSelectedDevice(null)}
+                        className="p-2 hover:bg-surface-muted rounded-lg transition-colors"
+                      >
+                        <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-surface-muted rounded-xl p-4">
+                          <p className="text-xs text-ink-muted mb-1">Machine</p>
+                          <p className="text-sm font-medium text-ink">{selectedDevice.machine_name || '-'}</p>
+                        </div>
+                        <div className="bg-surface-muted rounded-xl p-4">
+                          <p className="text-xs text-ink-muted mb-1">Location</p>
+                          <p className="text-sm font-medium text-ink">{selectedDevice.location || '-'}</p>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-border pt-4">
+                        <h4 className="text-sm font-medium text-ink mb-3">Live Readings</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-surface-muted rounded-xl p-3">
+                            <p className="text-xs text-ink-muted">Temperature</p>
+                            <p className="text-lg font-semibold text-ink">{selectedDevice.temperature?.toFixed(1) || '-'}°C</p>
+                          </div>
+                          <div className="bg-surface-muted rounded-xl p-3">
+                            <p className="text-xs text-ink-muted">Gas Index</p>
+                            <p className="text-lg font-semibold text-ink">{selectedDevice.gas_index?.toFixed(0) || '-'} ppm</p>
+                          </div>
+                          <div className="bg-surface-muted rounded-xl p-3">
+                            <p className="text-xs text-ink-muted">Vibration (X/Y/Z)</p>
+                            <p className="text-lg font-semibold text-ink">
+                              {selectedDevice.vibration_x?.toFixed(1) || '-'} / {selectedDevice.vibration_y?.toFixed(1) || '-'} / {selectedDevice.vibration_z?.toFixed(1) || '-'}
+                            </p>
+                          </div>
+                          <div className="bg-surface-muted rounded-xl p-3">
+                            <p className="text-xs text-ink-muted">Power</p>
+                            <p className="text-lg font-semibold text-ink">{selectedDevice.power_consumption?.toFixed(1) || '-'} kW</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-border pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-ink-muted">Status</p>
+                            <p className={`text-sm font-medium ${selectedDevice.is_active ? 'text-accent-green' : 'text-ink-faint'}`}>
+                              {selectedDevice.is_active ? 'Online' : 'Offline'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-ink-muted">Last Seen</p>
+                            <p className="text-sm text-ink">
+                              {selectedDevice.last_seen ? new Date(selectedDevice.last_seen).toLocaleString() : '-'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
             </motion.div>
           )}
 
@@ -530,12 +889,14 @@ function AlertCard({ alert, expanded }: { alert: Alert; expanded?: boolean }) {
   );
 }
 
-function DeviceCard({ device }: { device: Device }) {
-  const isOnline = device.last_seen && 
-    (new Date().getTime() - new Date(device.last_seen).getTime()) < 300000;
+function DeviceCard({ device, onClick, selected }: { device: Device; onClick?: () => void; selected?: boolean }) {
+  const isOnline = device.is_active;
 
   return (
-    <div className="bg-surface-elevated rounded-2xl border border-border p-5">
+    <div 
+      className={`bg-surface-elevated rounded-2xl border ${selected ? 'border-accent-green' : 'border-border'} p-5 cursor-pointer hover:border-accent-green/50 transition-all`}
+      onClick={onClick}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center">
           <svg className="w-6 h-6 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -551,6 +912,24 @@ function DeviceCard({ device }: { device: Device }) {
       </div>
       <h3 className="text-base font-semibold text-ink">{device.device_name}</h3>
       <p className="text-sm text-ink-faint font-mono mt-1">{device.device_id}</p>
+      {device.machine_name && (
+        <p className="text-xs text-ink-muted mt-2">{device.machine_name}</p>
+      )}
+      {device.location && (
+        <p className="text-xs text-ink-faint mt-1">{device.location}</p>
+      )}
+      {isOnline && device.temperature !== undefined && (
+        <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 gap-2">
+          <div>
+            <p className="text-xs text-ink-faint">Temp</p>
+            <p className="text-sm font-medium text-ink">{device.temperature?.toFixed(1)}°C</p>
+          </div>
+          <div>
+            <p className="text-xs text-ink-faint">Gas</p>
+            <p className="text-sm font-medium text-ink">{device.gas_index?.toFixed(0)} ppm</p>
+          </div>
+        </div>
+      )}
       {device.last_seen && (
         <p className="text-xs text-ink-muted mt-3">
           Last seen: {new Date(device.last_seen).toLocaleString()}

@@ -1,12 +1,26 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 from app import models, schemas, auth
 from app.database import get_db
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
+
+
+class BulkDeviceItem(BaseModel):
+    device_id: str
+    device_name: str
+    factory_id: int
+    device_type: Optional[str] = "ESP32"
+    machine_name: Optional[str] = None
+    location: Optional[str] = None
+
+
+class BulkDevicesUpload(BaseModel):
+    devices: List[BulkDeviceItem]
 
 
 @router.post("/register", response_model=schemas.Device)
@@ -52,6 +66,63 @@ async def register_device(
     db.refresh(db_device)
     
     return db_device
+
+
+@router.post("/bulk", status_code=status.HTTP_201_CREATED)
+async def bulk_upload_devices(
+    data: BulkDevicesUpload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """
+    Bulk upload devices (Admin only).
+    Accepts an array of devices to create.
+    """
+    if current_user.role != models.UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can bulk upload devices"
+        )
+    
+    created_count = 0
+    errors = []
+    
+    for idx, device in enumerate(data.devices):
+        # Check if device already exists
+        existing = db.query(models.Device).filter(
+            models.Device.device_id == device.device_id
+        ).first()
+        
+        if existing:
+            errors.append(f"Device {idx}: {device.device_id} already exists")
+            continue
+        
+        # Verify factory exists
+        factory = db.query(models.Factory).filter(models.Factory.id == device.factory_id).first()
+        if not factory:
+            errors.append(f"Device {idx}: Factory {device.factory_id} not found")
+            continue
+        
+        db_device = models.Device(
+            device_id=device.device_id,
+            device_name=device.device_name,
+            device_type=device.device_type or "ESP32",
+            factory_id=device.factory_id,
+            machine_name=device.machine_name,
+            location=device.location,
+            is_active=True,
+            last_seen=datetime.utcnow()
+        )
+        db.add(db_device)
+        created_count += 1
+    
+    db.commit()
+    
+    return {
+        "status": "success",
+        "created": created_count,
+        "errors": errors if errors else None
+    }
 
 
 @router.get("", response_model=List[schemas.Device])

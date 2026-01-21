@@ -3,10 +3,28 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import List, Optional
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 from app import models, schemas, auth
 from app.database import get_db
 
 router = APIRouter(tags=["Data Ingestion"])
+
+
+class BulkReadingItem(BaseModel):
+    device_id: int
+    temperature: Optional[float] = None
+    gas_index: Optional[float] = None
+    vibration_x: Optional[float] = None
+    vibration_y: Optional[float] = None
+    vibration_z: Optional[float] = None
+    humidity: Optional[float] = None
+    pressure: Optional[float] = None
+    power_consumption: Optional[float] = None
+    timestamp: Optional[datetime] = None
+
+
+class BulkReadingsUpload(BaseModel):
+    readings: List[BulkReadingItem]
 
 
 @router.post("/ingest", status_code=status.HTTP_201_CREATED)
@@ -64,6 +82,61 @@ async def ingest_sensor_data(
     # Example: await check_anomalies(db_reading, device)
     
     return {"status": "success", "message": "Data ingested successfully"}
+
+
+@router.post("/data/bulk", status_code=status.HTTP_201_CREATED)
+async def bulk_upload_readings(
+    data: BulkReadingsUpload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """
+    Bulk upload sensor readings (Admin only).
+    Accepts an array of readings with device_id references.
+    """
+    if current_user.role != models.UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can bulk upload data"
+        )
+    
+    created_count = 0
+    errors = []
+    
+    for idx, reading in enumerate(data.readings):
+        # Verify device exists
+        device = db.query(models.Device).filter(models.Device.id == reading.device_id).first()
+        if not device:
+            errors.append(f"Reading {idx}: Device {reading.device_id} not found")
+            continue
+        
+        timestamp = reading.timestamp if reading.timestamp else datetime.utcnow()
+        
+        db_reading = models.SensorReading(
+            device_id=reading.device_id,
+            timestamp=timestamp,
+            temperature=reading.temperature,
+            gas_index=reading.gas_index,
+            vibration_x=reading.vibration_x,
+            vibration_y=reading.vibration_y,
+            vibration_z=reading.vibration_z,
+            humidity=reading.humidity,
+            pressure=reading.pressure,
+            power_consumption=reading.power_consumption
+        )
+        db.add(db_reading)
+        
+        # Update device last_seen
+        device.last_seen = timestamp
+        created_count += 1
+    
+    db.commit()
+    
+    return {
+        "status": "success",
+        "created": created_count,
+        "errors": errors if errors else None
+    }
 
 
 @router.get("/data/latest", response_model=schemas.LatestData)

@@ -200,3 +200,78 @@ async def acknowledge_alert(
     db.refresh(alert)
     
     return alert
+
+
+@router.post("/alerts/bulk", status_code=status.HTTP_201_CREATED)
+async def bulk_upload_alerts(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """
+    Bulk upload alerts (Admin only).
+    Accepts an array of alerts to create.
+    """
+    from pydantic import BaseModel
+    from typing import Optional
+    
+    if current_user.role != models.UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can bulk upload alerts"
+        )
+    
+    alerts_data = data.get("alerts", [])
+    created_count = 0
+    errors = []
+    
+    for idx, alert_data in enumerate(alerts_data):
+        # Verify device exists
+        device_id = alert_data.get("device_id")
+        factory_id = alert_data.get("factory_id")
+        
+        if device_id:
+            device = db.query(models.Device).filter(models.Device.id == device_id).first()
+            if not device:
+                errors.append(f"Alert {idx}: Device {device_id} not found")
+                continue
+            if not factory_id:
+                factory_id = device.factory_id
+        
+        if factory_id:
+            factory = db.query(models.Factory).filter(models.Factory.id == factory_id).first()
+            if not factory:
+                errors.append(f"Alert {idx}: Factory {factory_id} not found")
+                continue
+        
+        # Map severity string to enum
+        severity_str = alert_data.get("severity", "info").lower()
+        severity_map = {
+            "info": models.AlertSeverity.INFO,
+            "warning": models.AlertSeverity.WARNING,
+            "critical": models.AlertSeverity.CRITICAL
+        }
+        severity = severity_map.get(severity_str, models.AlertSeverity.INFO)
+        
+        db_alert = models.Alert(
+            device_id=device_id,
+            factory_id=factory_id,
+            alert_type=alert_data.get("alert_type", "custom"),
+            severity=severity,
+            status=models.AlertStatus.ACTIVE,
+            title=alert_data.get("title", "Alert"),
+            message=alert_data.get("message", ""),
+            metric_value=alert_data.get("metric_value"),
+            threshold_value=alert_data.get("threshold_value"),
+            triggered_at=datetime.utcnow()
+        )
+        db.add(db_alert)
+        created_count += 1
+    
+    db.commit()
+    
+    return {
+        "status": "success",
+        "created": created_count,
+        "errors": errors if errors else None
+    }
